@@ -3,6 +3,7 @@
 
 ## To Run
 
+- npm install
 - npm start
 - Go to http://localhost:3030
 
