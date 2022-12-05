@@ -15,7 +15,6 @@ app.get('/', async (req, res) => {
 
 app.get('/scanner', async (req, res) => {
   let globalURL = req.query.url;
-  console.log('get request');
   let hasXSS = await check_xss(globalURL);
   console.log(hasXSS)
   res.send(hasXSS);
@@ -30,11 +29,12 @@ const MALICIOUS_SCRIPT = [
   '<img src="http://inexist.ent" onerror="javascript:alert(1)"/>',
   'ABC<div style="x:\xE2\x80\x81expression(javascript:alert(1)">DEF',
   '\x3Cscript>javascript:alert(1)</script>',
-  '<html onmousemove html onmousemove="javascript:javascript:alert(1)"></html onmousemove>',
+  '<html onmousemove html onmousemove="javascript:javascript:alert(1)"></html onmousemove>'
 ];
 
 async function check_xss(url) {
   const browser = await puppeteer.launch({
+  headless: false,  
     args: [
         '--no-sandbox',
         '--disable-setuid-sandbox'
@@ -51,7 +51,6 @@ async function check_xss(url) {
   });
   for (script in MALICIOUS_SCRIPT) {
     let newUrl = check_url(url, MALICIOUS_SCRIPT[script]);
-    console.log(newUrl)
     if (newUrl != '') {
       await page2.goto(newUrl);
     }
@@ -70,8 +69,7 @@ async function check_xss(url) {
           (inputs) =>
             inputs.map((input) => (input.id ? '#' + input.id : input.className ? ('.' + input.className) : false))
         );
-        console.log("yo")
-        console.log(inputsArray)
+        
         for (input in inputsArray) {
           if(!inputsArray[input]){
             browser.close();
@@ -83,20 +81,14 @@ async function check_xss(url) {
           }
           await page2.type(selector, MALICIOUS_SCRIPT[script], { delay: 20 });
         }
-        console.log("ko")
         let btnsArray = await formsArray[
           i
         ].$$eval('input[type="submit"],button[type="submit"]', (subs) =>
           subs.map((sub) => (sub.id ? '#' + sub.id : sub.className ? ('.' + sub.className) : false ))
         );
-        console.log("so")
-        console.log(btnsArray)
         let btn = btnsArray[0];
-        console.log(btn)
         await page2.click(btn);
-        console.log("okkk")
         newUrl = check_url(page2.url(), MALICIOUS_SCRIPT[script]);
-        console.log(newUrl)
         if (newUrl != '') {
           await page2.goto(newUrl);
         }
@@ -144,8 +136,7 @@ server.listen(process.env.PORT || 3030, () =>
   console.log(`Server has started at 3030.`)
 );
 
-// https://xss-game.appspot.com/level1/frame
-// https://xss-game.appspot.com/level2/frame
-// https://xss-game.appspot.com/level4/frame
-// https://www.wikipedia.org
-//  https://gibiru.com/
+// https://xss-game.appspot.com/level1/frame (XSS)
+// https://xss-game.appspot.com/level4/frame (XSS)
+// https://www.wikipedia.org (No XSS)
+
